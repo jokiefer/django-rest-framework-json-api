@@ -11,12 +11,11 @@ from rest_framework_json_api.relations import ResourceRelatedField
 from rest_framework_json_api.renderers import JSONRenderer
 from rest_framework_json_api.views import ModelViewSet
 from tests.models import ForeignKeySource, ForeignKeyTarget
-from tests.serializers import ForeignKeySourceSerializer
 from rest_framework_json_api import serializers
 
 from django.urls import reverse
 from django.core.signals import request_finished, request_started
-
+import json
 
 @pytest.fixture
 def service(db):
@@ -34,13 +33,26 @@ class TestIncludePerformance:
 
         url = reverse("benchmark-detail", kwargs={"pk": service.pk})
         response = client.get(f"{url}?include=sources")
-        print(len(response.content))
+        result = json.loads(response.content)
+        print(len(result["included"]))
         assert response.status_code == status.HTTP_200_OK
-        #assert BasicModel.objects.count() == 0
-        #assert len(response.rendered_content) == 0
+        assert len(result["included"]) == 10000
 
 
 class ForeignKeyTargetSerializer(serializers.ModelSerializer):
+    a = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    b = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    c = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    d = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    e = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    f = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    g = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    h = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    i = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    j = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    k = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+    l = serializers.CharField(default=serializers.CreateOnlyDefault("default"))
+
     sources = ResourceRelatedField(
         model=ForeignKeySource, 
         many=True,

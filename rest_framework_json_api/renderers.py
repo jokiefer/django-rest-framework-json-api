@@ -278,11 +278,12 @@ class JSONRenderer(renderers.JSONRenderer):
             current_serializer, "included_serializers", dict()
         )
         included_resources = copy.copy(included_resources)
-        included_resources = [
-            inflection.underscore(value) for value in included_resources
-        ]
+        
+        #included_parent_resources = [node.split(".")[0] for node in included_resources]
 
-        for field_name, field in iter(fields.items()):
+        #included_fields = { field_name: field for field_name, field in fields.items() if utils.is_relationship_field(field) and field_name in included_resources}
+
+        for field_name, field in fields.items():
             # Skip URL field
             if field_name == api_settings.URL_FIELD_NAME:
                 continue
@@ -290,12 +291,21 @@ class JSONRenderer(renderers.JSONRenderer):
             # Skip fields without relations
             if not utils.is_relationship_field(field):
                 continue
+          
+            # try:
+            #     included_resources.remove(field_name)
+            # except ValueError:
+            #     # Skip fields not in requested included resources
+            #     # If no child field, directly continue with the next field
+            #     if field_name not in [
+            #         node.split(".")[0] for node in included_resources
+            #     ]:
+            #         continue
 
-            try:
+            if field_name in included_resources:
                 included_resources.remove(field_name)
-            except ValueError:
+            else:
                 # Skip fields not in requested included resources
-                # If no child field, directly continue with the next field
                 if field_name not in [
                     node.split(".")[0] for node in included_resources
                 ]:
@@ -345,6 +355,7 @@ class JSONRenderer(renderers.JSONRenderer):
 
                 if serializer_data:
                     for position in range(len(serializer_data)):
+                        
                         serializer_resource = serializer_data[position]
                         nested_resource_instance = relation_queryset[position]
                         resource_type = (
@@ -368,13 +379,16 @@ class JSONRenderer(renderers.JSONRenderer):
                         )
                         included_cache[new_item["type"]][new_item["id"]] = new_item
 
-                        cls.extract_included(
-                            serializer_fields,
-                            serializer_resource,
-                            nested_resource_instance,
-                            new_included_resources,
-                            included_cache,
-                        )
+                        # TODO: necessary ? could be skipped if there is no included
+                        if utils.has_included_canditates(serializer_fields, new_included_resources):
+                            print("yea")
+                            cls.extract_included(
+                                serializer_fields,
+                                serializer_resource,
+                                nested_resource_instance,
+                                new_included_resources,
+                                included_cache,
+                            )
 
             if isinstance(field, Serializer):
                 relation_type = utils.get_resource_type_from_serializer(field)
@@ -392,13 +406,15 @@ class JSONRenderer(renderers.JSONRenderer):
                     )
                     included_cache[new_item["type"]][new_item["id"]] = new_item
 
-                    cls.extract_included(
-                        serializer_fields,
-                        serializer_data,
-                        relation_instance,
-                        new_included_resources,
-                        included_cache,
-                    )
+                    if utils.has_included_canditates(serializer_fields, new_included_resources):
+                        print("yea 2")
+                        cls.extract_included(
+                            serializer_fields,
+                            serializer_data,
+                            relation_instance,
+                            new_included_resources,
+                            included_cache,
+                        )
 
     @classmethod
     def extract_meta(cls, serializer, resource):
@@ -571,7 +587,9 @@ class JSONRenderer(renderers.JSONRenderer):
                         force_type_resolution,
                     )
                     json_api_data.append(json_resource_obj)
-
+                    included_resources = [
+                        inflection.underscore(value) for value in included_resources
+                    ]
                     self.extract_included(
                         fields,
                         resource,

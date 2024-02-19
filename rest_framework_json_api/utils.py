@@ -355,6 +355,10 @@ def is_relationship_field(field):
     return isinstance(field, (relations.RelatedField, relations.ManyRelatedField))
 
 
+def has_included_canditates(serializer_fields, included_resources):
+    return any(key in serializer_fields.keys() for key in included_resources)
+
+
 class Hyperlink(str):
     """
     A string like object that additionally has an associated name.
